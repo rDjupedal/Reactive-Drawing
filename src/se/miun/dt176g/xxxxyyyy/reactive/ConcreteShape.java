@@ -9,7 +9,7 @@ import java.awt.Graphics2D;
  * In other words, this class represents ONE type of shape
  * i.e. a circle, rectangle, n-sided regular polygon (if that's your thing)
  *
- * @author 	--YOUR NAME HERE--
+ * @author 	Rasmus Djupedal
  * @version 1.0
  * @since 	2022-09-08
  */

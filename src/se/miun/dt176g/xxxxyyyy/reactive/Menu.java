@@ -9,7 +9,7 @@ import javax.swing.JOptionPane;
 /**
  * <h1>Menu</h1> 
  *
- * @author 	--YOUR NAME HERE--
+ * @author 	Rasmus Djupedal
  * @version 1.0
  * @since 	2022-09-08
  */

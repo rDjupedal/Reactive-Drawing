@@ -9,7 +9,7 @@ import java.awt.Graphics;
  * Let this class store an arbitrary number of AbstractShape-objects in
  * some kind of container. 
  *
- * @author 	--YOUR NAME HERE--
+ * @author 	Rasmus Djupedal
  * @version 1.0
  * @since 	2022-09-08
  */

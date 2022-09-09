@@ -6,7 +6,7 @@ import javax.swing.SwingUtilities;
 /**
 * <h1>AppStart</h1>
 *
-* @author  --YOUR NAME HERE--
+* @author  Rasmus Djupedal
 * @version 1.0
 * @since   2022-09-08
 */
