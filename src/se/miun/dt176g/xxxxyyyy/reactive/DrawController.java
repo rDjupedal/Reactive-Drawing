@@ -14,6 +14,7 @@ import java.util.ArrayList;
 public class DrawController {
     private final DrawView dView;
     private final DrawModel dModel;
+    private Observable<Socket> socketObservable;
 
     public DrawController(DrawView dView, DrawModel dModel) {
         this.dView = dView;
@@ -30,13 +31,14 @@ public class DrawController {
             public void mouseReleased(MouseEvent e) {
                 // if a new shape has been drawn now is probably the time to send it to the server
                 AbstractShape curShape = dModel.getCurrentShape();
+                System.out.println("finished drawing shape: " + curShape.getClass().getName());
 
-                ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
-                try {
-                    objectOutput.writeObject(curShape);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
+                socketObservable
+                        .subscribeOn(Schedulers.io())
+                        .map(socket -> socket.getOutputStream())
+                        .map(ObjectOutputStream::new)
+                        .subscribe(oStream -> oStream.writeObject(curShape));
+
             }
         });
 
@@ -97,7 +99,8 @@ public class DrawController {
         });
 
 
-        Observable<Socket> incomingShapes = Observable.create(emitter -> {
+        //Observable<Socket> socketObservable = Observable.create(emitter -> {
+        socketObservable = Observable.create(emitter -> {
 
             // Get the controls from connectionPanel
             JButton connBtn = null;
@@ -127,7 +130,7 @@ public class DrawController {
         thicknessObservable.subscribe(thickValue -> dModel.setThickness(thickValue));
         colorObservable.subscribe(color -> dModel.setColor(color));
 
-        incomingShapes
+        socketObservable
                 .subscribeOn(Schedulers.io())
                 .map(ShapeReceiver::new)
                 .subscribe(obsShape -> {
