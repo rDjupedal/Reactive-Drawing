@@ -23,7 +23,9 @@ public class DrawController {
 
             //todo: Remove if not used in future
             @Override
-            public void mouseReleased(MouseEvent e) {}
+            public void mouseReleased(MouseEvent e) {
+                // if a new shape has been drawn now is probably the time to send it to the server
+            }
         });
 
         // Observable MouseDrags

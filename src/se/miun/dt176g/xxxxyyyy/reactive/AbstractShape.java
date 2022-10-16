@@ -1,8 +1,9 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import java.awt.*;
+import java.io.Serializable;
 
-public abstract class AbstractShape {
+public abstract class AbstractShape implements Serializable {
     private int x1, y1, x2, y2;
     private int thickness = 2;
     private Color color;
