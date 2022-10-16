@@ -48,4 +48,13 @@ public class DrawModel {
 
     public ArrayList<AbstractShape> getShapes() { return shapes; }
 
+    protected void addShape(AbstractShape shape) {
+        shapes.add(shape);
+        //todo: repaint!
+    }
+
+    protected AbstractShape getCurrentShape() {
+        return shapes.get(currentShapeIndex);
+    }
+
 }

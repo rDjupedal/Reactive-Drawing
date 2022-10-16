@@ -39,21 +39,19 @@ public class DrawView extends JPanel {
         connectionPanel = new JPanel();
 
         connectionPanel.setBackground(Color.GRAY);
-        add(connectionPanel, BorderLayout.SOUTH);
+
         JTextField serverTextfield = new JTextField("127.0.0.1/5000");
         serverTextfield.setName("hostText");
 
         JButton connectBtn = new JButton("Connect to server");
         connectBtn.setName("connBtn");
 
-        connectBtn.addActionListener(l -> {
-            String host = serverTextfield.getText().split("/")[0].toString();
-            int port = Integer.parseInt(serverTextfield.getText().split("/")[1]);
-            System.out.println("Connecting to " + host + " on port " + port + "...");
-        });
+
 
         connectionPanel.add(serverTextfield);
         connectionPanel.add(connectBtn);
+
+        add(connectionPanel, BorderLayout.SOUTH);
 
     }
 

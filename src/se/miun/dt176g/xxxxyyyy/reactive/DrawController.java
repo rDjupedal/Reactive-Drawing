@@ -1,9 +1,14 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.util.ArrayList;
 
 public class DrawController {
@@ -21,10 +26,17 @@ public class DrawController {
                 dModel.createShape(e.getX(), e.getY());
             }
 
-            //todo: Remove if not used in future
             @Override
             public void mouseReleased(MouseEvent e) {
                 // if a new shape has been drawn now is probably the time to send it to the server
+                AbstractShape curShape = dModel.getCurrentShape();
+
+                ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
+                try {
+                    objectOutput.writeObject(curShape);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         });
 
@@ -85,18 +97,28 @@ public class DrawController {
         });
 
 
-        Observable<AbstractShape> incomingShapes = Observable.create(emitter -> {
-
-            String hostAddress = "empty";
+        Observable<Socket> incomingShapes = Observable.create(emitter -> {
 
             // Get the controls from connectionPanel
-            JButton connBtn;
+            JButton connBtn = null;
+            JTextField addressTextField = null;
             Component[] components = dView.getConnectionPanel().getComponents();
             for (Component c : components) {
-                if (c.getName().equals("hostText")) hostAddress = ((JTextField) c).getText();
+                if (c.getName().equals("hostText")) addressTextField = ((JTextField) c);
                 if (c.getName().equals("connBtn")) connBtn = (JButton) c;
-                System.out.println(hostAddress);
             }
+
+            final JTextField finalAddressTextField = addressTextField;
+                connBtn.addActionListener(l -> {
+                    String host = finalAddressTextField.getText().split("/")[0];
+                    int port = Integer.parseInt(finalAddressTextField.getText().split("/")[1]);
+                    System.out.println("Connecting to " + host + " on port " + port + "...");
+                    //todo Check legal address
+                    try {
+                        emitter.onNext(new Socket(host, port));
+                    } catch (Exception e) { e.printStackTrace(); }
+
+                });
 
         });
 
@@ -104,8 +126,21 @@ public class DrawController {
         toolObservable.subscribe(tool -> dModel.setTool(tool));
         thicknessObservable.subscribe(thickValue -> dModel.setThickness(thickValue));
         colorObservable.subscribe(color -> dModel.setColor(color));
-        incomingShapes.subscribe();
+
+        incomingShapes
+                .subscribeOn(Schedulers.io())
+                .map(ShapeReceiver::new)
+                .subscribe(obsShape -> {
+                    obsShape.getObserver()
+                            .subscribeOn(Schedulers.io())    // <--- Important! To not wait for shapes on main thread!
+                            .doOnNext(s -> System.out.println("got shape: " + s.getClass().getName()))
+                            .subscribe(shape -> { dModel.addShape(shape);
+
+                            });
+                });
+
     }
+
 
     protected ArrayList<AbstractShape> getShapes() {
         return dModel.getShapes();
