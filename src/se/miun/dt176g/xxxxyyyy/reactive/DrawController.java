@@ -84,9 +84,27 @@ public class DrawController {
             });
         });
 
+
+        Observable<AbstractShape> incomingShapes = Observable.create(emitter -> {
+
+            String hostAddress = "empty";
+
+            // Get the controls from connectionPanel
+            JButton connBtn;
+            Component[] components = dView.getConnectionPanel().getComponents();
+            for (Component c : components) {
+                if (c.getName().equals("hostText")) hostAddress = ((JTextField) c).getText();
+                if (c.getName().equals("connBtn")) connBtn = (JButton) c;
+                System.out.println(hostAddress);
+            }
+
+        });
+
+
         toolObservable.subscribe(tool -> dModel.setTool(tool));
         thicknessObservable.subscribe(thickValue -> dModel.setThickness(thickValue));
         colorObservable.subscribe(color -> dModel.setColor(color));
+        incomingShapes.subscribe();
     }
 
     protected ArrayList<AbstractShape> getShapes() {

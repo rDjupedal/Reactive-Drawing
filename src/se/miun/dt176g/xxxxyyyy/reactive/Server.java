@@ -7,6 +7,7 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -38,12 +39,8 @@ public class Server {
                     .subscribe(this::listenTest);
         }
 
-        /*
-        Socket clientSocket = serverSocket.accept();
-        System.out.println("incoming..");
-        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-         */
+        //not reachable
+
     }
 
     private void listenTest(Socket socket) {
@@ -101,6 +98,20 @@ public class Server {
                             System.err.println(err.getMessage());
                         }
                 , () -> System.out.println("?"));
+
+
+        // Subscribe the client to the shapeStream
+
+        try {
+            ObjectOutputStream objOutStream = new ObjectOutputStream(socket.getOutputStream());
+
+            shapeStream
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(objOutStream::writeObject
+                    , err -> System.out.println("error sending shape to client"));
+
+
+        } catch (Exception e) { e.printStackTrace(); }
 
 
         /*Observable.just(socket)

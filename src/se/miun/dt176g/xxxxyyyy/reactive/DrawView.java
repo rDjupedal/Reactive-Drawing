@@ -13,6 +13,7 @@ public class DrawView extends JPanel {
     private JButton colorBtn;
     private JPanel buttonPanel;
     private JPanel drawPanel;
+    private JPanel connectionPanel;
 
     public DrawView(MainFrame frame) {
         this.frame = frame;
@@ -34,6 +35,26 @@ public class DrawView extends JPanel {
         };
 
         add(drawPanel, BorderLayout.CENTER);
+
+        connectionPanel = new JPanel();
+
+        connectionPanel.setBackground(Color.GRAY);
+        add(connectionPanel, BorderLayout.SOUTH);
+        JTextField serverTextfield = new JTextField("127.0.0.1/5000");
+        serverTextfield.setName("hostText");
+
+        JButton connectBtn = new JButton("Connect to server");
+        connectBtn.setName("connBtn");
+
+        connectBtn.addActionListener(l -> {
+            String host = serverTextfield.getText().split("/")[0].toString();
+            int port = Integer.parseInt(serverTextfield.getText().split("/")[1]);
+            System.out.println("Connecting to " + host + " on port " + port + "...");
+        });
+
+        connectionPanel.add(serverTextfield);
+        connectionPanel.add(connectBtn);
+
     }
 
     /**
@@ -66,5 +87,7 @@ public class DrawView extends JPanel {
     protected JButton getColorBtn() { return colorBtn; }
 
     protected JPanel getDrawPanel() { return drawPanel; }
+
+    protected JPanel getConnectionPanel() { return connectionPanel; }
 
 }
