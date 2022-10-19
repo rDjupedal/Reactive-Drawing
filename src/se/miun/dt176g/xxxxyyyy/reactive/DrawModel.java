@@ -54,8 +54,6 @@ public class DrawModel {
      */
     protected void addShape(AbstractShape shape) {
         shapes.add(shape);
-        System.out.println("added shape");
-        //todo: repaint!
     }
 
     protected AbstractShape getCurrentShape() {
