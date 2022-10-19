@@ -28,11 +28,13 @@ public class ShapeReceiver {
                                         emitter.onNext((AbstractShape) shape);
                                     }
                                 }
+
                             }
 
                             , err -> {
-                                System.out.println("Connection error or client disconnected");
-                                System.err.println(err);
+                                System.out.println("Connection error or client disconnected: " + err);
+
+                                //System.err.println(err);
                                 if (socket.isConnected()) socket.close();
                             });
                 });

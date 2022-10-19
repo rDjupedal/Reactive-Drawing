@@ -108,7 +108,7 @@ public class Server {
             shapeStream
                     .subscribeOn(Schedulers.io())
                     .subscribe(objOutStream::writeObject
-                    , err -> System.out.println("error sending shape to client")
+                    , err -> System.out.println("error sending shape to client: " +err)
                     , () -> System.out.println("shape sent to client"));
 
 

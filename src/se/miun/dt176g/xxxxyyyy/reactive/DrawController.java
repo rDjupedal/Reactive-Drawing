@@ -15,6 +15,7 @@ public class DrawController {
     private final DrawView dView;
     private final DrawModel dModel;
     private Socket socket = null;
+    private ObjectOutputStream outputStream = null;
 
     public DrawController(DrawView dView, DrawModel dModel) {
         this.dView = dView;
@@ -34,6 +35,13 @@ public class DrawController {
 
                 System.out.println("finsihed drawing shape " + curShape.getClass().getName());
 
+                Observable.just(outputStream)
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(stream -> stream.writeObject(curShape),
+                                err -> System.out.println("error: " + err));
+
+
+                /*
                 if (socket != null) {
                     Observable.just(socket)
                             .filter(socket -> socket.isConnected())
@@ -41,6 +49,8 @@ public class DrawController {
                             .map(ObjectOutputStream::new)
                             .subscribe(outStream -> outStream.writeObject(curShape), err -> System.err.println(err));
                 }
+
+                 */
 
             }
         });
@@ -144,15 +154,13 @@ public class DrawController {
         final JTextField finalAddressTextField = addressTextField;
         connBtn.addActionListener(l -> {
 
-
-            //todo Check legal address
             try {
-                //emitter.onNext(new Socket(host, port));
                 String host = finalAddressTextField.getText().split("/")[0];
                 int port = Integer.parseInt(finalAddressTextField.getText().split("/")[1]);
                 connectToServer(host, port);
-            } catch (Exception e) { e.printStackTrace(); }
-
+            } catch (Exception e) {
+                System.out.println("Malformed server/port input");
+                e.printStackTrace(); }
         });
 
 
@@ -165,6 +173,7 @@ public class DrawController {
     private void connectToServer(String host, int port) throws IOException {
         System.out.println("Connecting to " + host + " on port " + port + "...");
         socket = new Socket(host, port);
+        outputStream = new ObjectOutputStream(socket.getOutputStream());
 
         // Subscribe to incoming shapes
         Observable.just(socket)
