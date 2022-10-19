@@ -30,7 +30,11 @@ public class DrawView extends JPanel {
             public void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 ArrayList<AbstractShape> shapes = frame.getController().getShapes();
-                shapes.forEach(shape -> shape.paint(g));
+
+                // Clone the ArrayList to avoid concurrent errors
+                ArrayList<AbstractShape> cl = (ArrayList) shapes.clone();
+                //shapes.forEach(shape -> shape.paint(g));
+                cl.forEach(shape -> shape.paint(g));
             }
         };
 

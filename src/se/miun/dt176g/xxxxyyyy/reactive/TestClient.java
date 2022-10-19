@@ -8,6 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.util.Random;
 
 public class TestClient {
 
@@ -66,7 +67,29 @@ public class TestClient {
          */
 
 
+        ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
+        int shapeNo = 0;
 
+        Random rnd = new Random();
+        while (shapeNo++ < 1000) {
+            int x = rnd.nextInt(500);
+            int y = rnd.nextInt(500);
+            int width = rnd.nextInt(200);
+            int height = rnd.nextInt(200);
+            int thick = rnd.nextInt(3) + 1;
+            Color color = new Color((int) Math.random() * 0x1000000);
+
+            RectangleShape rec = new RectangleShape(x, y, color, thick);
+            rec.dragTo(new Point(x + width, y + height));
+
+            System.out.println("Sending shape " + shapeNo + " x: " + x + ", y: " + y + " width: " + width + " height: " + height);
+            objectOutput.writeObject(rec);
+
+            Thread.sleep(3000);
+
+        }
+
+        /*
         RectangleShape rec1 = new RectangleShape(100,100, new Color(Color.BLUE.getRGB()),1 );
         rec1.dragTo(new Point(150,150));
         System.out.println("sending object1..");
@@ -74,13 +97,15 @@ public class TestClient {
         objectOutput.writeObject(rec1);
 
         Thread.sleep(1000);
-        RectangleShape rec2 = new RectangleShape(200,200, new Color(Color.BLUE.getRGB()),1 );
+        RectangleShape rec2 = new RectangleShape(200,200, new Color(Color.GREEN.getRGB()),3 );
         rec2.dragTo(new Point(300,300));
         System.out.println("sending object2..");
         objectOutput.writeObject(rec2);
 
         Thread.sleep(30000);
 
+
+         */
 
         objectOutput.close();
         socket.close();

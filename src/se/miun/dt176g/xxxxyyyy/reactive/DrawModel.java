@@ -48,8 +48,13 @@ public class DrawModel {
 
     public ArrayList<AbstractShape> getShapes() { return shapes; }
 
+    /**
+     * Used for adding incoming shape from server
+     * @param shape the shape
+     */
     protected void addShape(AbstractShape shape) {
         shapes.add(shape);
+        System.out.println("added shape");
         //todo: repaint!
     }
 

@@ -43,4 +43,5 @@ public class ShapeReceiver {
     protected Observable<AbstractShape> getObserver() {
         return shapeObservable;
     }
+
 }

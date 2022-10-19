@@ -108,7 +108,8 @@ public class Server {
             shapeStream
                     .subscribeOn(Schedulers.io())
                     .subscribe(objOutStream::writeObject
-                    , err -> System.out.println("error sending shape to client"));
+                    , err -> System.out.println("error sending shape to client")
+                    , () -> System.out.println("shape sent to client"));
 
 
         } catch (Exception e) { e.printStackTrace(); }
@@ -155,20 +156,7 @@ public class Server {
          */
     }
 
-    private Observable<ObjectInputStream> get3(Socket socket) {
-        return Observable.just(socket)
-                .map(Socket::getInputStream)
-                .map(ObjectInputStream::new);
-    }
 
-    private Observable<Object> get2(Socket socket) {
-        System.out.println("get2() called");
-            return Observable.just(socket)
-                    .map(Socket::getInputStream)
-                    .map(ObjectInputStream::new)
-                    .map(ObjectInputStream::readObject)
-                    .doOnNext(obj -> System.out.println("get2(): " + obj.getClass().getName()));
-        }
 
     private Observable<AbstractShape> getIncomingShape(Socket socket) {
         out.println("debug0, socket: " + socket.toString());
