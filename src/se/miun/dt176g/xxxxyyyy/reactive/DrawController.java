@@ -1,12 +1,14 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -14,8 +16,12 @@ import java.util.ArrayList;
 public class DrawController {
     private final DrawView dView;
     private final DrawModel dModel;
+
     private Socket socket = null;
     private ObjectOutputStream outputStream = null;
+    private Disposable inShapes;
+    private Boolean isConnected = false;
+
 
     public DrawController(DrawView dView, DrawModel dModel) {
         this.dView = dView;
@@ -30,16 +36,16 @@ public class DrawController {
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                // if a new shape has been drawn now is probably the time to send it to the server
-                AbstractShape curShape = dModel.getCurrentShape();
 
-                System.out.println("finsihed drawing shape " + curShape.getClass().getName());
+                if (isConnected) {
 
-                Observable.just(outputStream)
-                        .subscribeOn(Schedulers.io())
-                        .subscribe(stream -> stream.writeObject(curShape),
-                                err -> System.out.println("error: " + err));
-
+                    // A shape has been finished drawing, set it to the server
+                    AbstractShape curShape = dModel.getCurrentShape();
+                    Observable.just(outputStream)
+                            .subscribeOn(Schedulers.io())
+                            .subscribe(stream -> stream.writeObject(curShape),
+                                    err -> System.out.println("error: " + err));
+                }
 
                 /*
                 if (socket != null) {
@@ -112,6 +118,13 @@ public class DrawController {
         });
 
 
+            dView.getClearBtn().addActionListener(listener -> {
+                dModel.clear();
+                dView.repaint();
+            });
+
+
+
         /*
         socketObservable = Observable.create(emitter -> {
 
@@ -160,7 +173,8 @@ public class DrawController {
                 connectToServer(host, port);
             } catch (Exception e) {
                 System.out.println("Malformed server/port input");
-                e.printStackTrace(); }
+                e.printStackTrace();
+            }
         });
 
 
@@ -172,9 +186,31 @@ public class DrawController {
 
     private void connectToServer(String host, int port) throws IOException {
         System.out.println("Connecting to " + host + " on port " + port + "...");
-        socket = new Socket(host, port);
-        outputStream = new ObjectOutputStream(socket.getOutputStream());
 
+        // The Socket and the ObjectOutStream can't be inside the Observable as these same instances are needed for sending also
+        socket = new Socket(host, port);
+
+        outputStream = new ObjectOutputStream(socket.getOutputStream());
+        isConnected = true;
+
+        // Subscribe to incoming shapes
+
+
+        ShapeReceiver sReceiver = new ShapeReceiver(socket);
+        inShapes = sReceiver.getObserver()
+                .subscribeOn(Schedulers.io())
+                .doOnNext(s -> System.out.println("got shape: " + s.getClass().getName() + " on thread " + Thread.currentThread().getName()))
+                .subscribe((shape) -> {
+                    dModel.addShape(shape);
+                    dView.repaint();
+                    }
+                , err -> System.out.println("Error receiving shape: " + err)
+                , () -> System.out.println("Observable finished"));
+
+
+
+
+        /*
         // Subscribe to incoming shapes
         Observable.just(socket)
                 .subscribeOn(Schedulers.io())
@@ -192,7 +228,13 @@ public class DrawController {
 
                 });
 
+         */
 
+    }
+
+    private void disconnect() {
+        isConnected = false;
+        inShapes.dispose();
     }
 
 

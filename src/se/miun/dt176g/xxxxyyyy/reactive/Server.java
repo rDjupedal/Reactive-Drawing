@@ -1,10 +1,8 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
-import io.reactivex.rxjava3.subjects.Subject;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -36,14 +34,14 @@ public class Server {
             Socket socket = serverSocket.accept();
             Observable.<Socket>create(emitter -> emitter.onNext(socket))
                     .observeOn(Schedulers.io())
-                    .subscribe(this::listenTest);
+                    .subscribe(this::connect);
         }
 
         //not reachable
 
     }
 
-    private void listenTest(Socket socket) {
+    private void connect(Socket socket) {
         out.println("Connection accepted on thread: " + Thread.currentThread().getName());
 
         /*
@@ -113,6 +111,8 @@ public class Server {
 
 
         } catch (Exception e) { e.printStackTrace(); }
+
+
 
 
         /*Observable.just(socket)

@@ -56,6 +56,10 @@ public class DrawModel {
         shapes.add(shape);
     }
 
+    protected void clear() {
+        shapes.clear();
+    }
+
     protected AbstractShape getCurrentShape() {
         return shapes.get(currentShapeIndex);
     }

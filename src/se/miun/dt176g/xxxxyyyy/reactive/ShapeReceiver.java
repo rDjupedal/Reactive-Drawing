@@ -1,6 +1,8 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+
 import java.io.ObjectInputStream;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -33,8 +35,6 @@ public class ShapeReceiver {
 
                             , err -> {
                                 System.out.println("Connection error or client disconnected: " + err);
-
-                                //System.err.println(err);
                                 if (socket.isConnected()) socket.close();
                             });
                 });

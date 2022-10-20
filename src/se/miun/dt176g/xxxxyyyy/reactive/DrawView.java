@@ -11,6 +11,7 @@ public class DrawView extends JPanel {
     private ArrayList<JButton> shapeButtons = new ArrayList<>();
     private JSpinner thicknessSpinner;
     private JButton colorBtn;
+    private JButton clearBtn;
     private JPanel buttonPanel;
     private JPanel drawPanel;
     private JPanel connectionPanel;
@@ -35,6 +36,7 @@ public class DrawView extends JPanel {
                 ArrayList<AbstractShape> cl = (ArrayList) shapes.clone();
                 //shapes.forEach(shape -> shape.paint(g));
                 cl.forEach(shape -> shape.paint(g));
+
             }
         };
 
@@ -50,11 +52,8 @@ public class DrawView extends JPanel {
         JButton connectBtn = new JButton("Connect to server");
         connectBtn.setName("connBtn");
 
-
-
         connectionPanel.add(serverTextfield);
         connectionPanel.add(connectBtn);
-
         add(connectionPanel, BorderLayout.SOUTH);
 
     }
@@ -80,6 +79,9 @@ public class DrawView extends JPanel {
         panel.add(new JLabel("Thickness "));
         thicknessSpinner = new JSpinner(new SpinnerNumberModel(3, 1, maxThickness, 1));
         panel.add(thicknessSpinner);
+
+        clearBtn = new JButton("Clear");
+        panel.add(clearBtn);
     }
 
     protected ArrayList<JButton> getShapeBtns() { return this.shapeButtons; }
@@ -87,6 +89,8 @@ public class DrawView extends JPanel {
     protected JSpinner getThickSpinner() { return thicknessSpinner; }
 
     protected JButton getColorBtn() { return colorBtn; }
+
+    protected JButton getClearBtn() { return clearBtn; }
 
     protected JPanel getDrawPanel() { return drawPanel; }
 
