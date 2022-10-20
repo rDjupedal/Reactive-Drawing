@@ -1,15 +1,18 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 
+import java.awt.Point;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Objects;
+import java.util.HashMap;
+
 
 import static java.lang.System.out;
 
@@ -17,6 +20,8 @@ import static java.lang.System.out;
 public class Server {
 
     private ReplaySubject<AbstractShape> shapeStream = ReplaySubject.create();
+    private HashMap<Integer, Disposable> disposableHashMap = new HashMap<>();
+
 
     public static void main(String[] args) throws Exception {
         Server server = new Server();
@@ -31,10 +36,11 @@ public class Server {
                 .subscribe();
 
         while (true) {
-            Socket socket = serverSocket.accept();
+            Socket socket = serverSocket.accept();  // A new Socket is created for the incoming connection
             Observable.<Socket>create(emitter -> emitter.onNext(socket))
                     .observeOn(Schedulers.io())
-                    .subscribe(this::connect);
+                    .subscribe(this::connect
+                    , err -> System.out.println("debug error here"));
         }
 
         //not reachable
@@ -44,27 +50,26 @@ public class Server {
     private void connect(Socket socket) {
         out.println("Connection accepted on thread: " + Thread.currentThread().getName());
 
-        /*
-        Observable.<AbstractShape>create(emitter -> {
-            get2(socket)
-                    .subscribe(obj -> {
-                        while (!emitter.isDisposed()) {
-                            AbstractShape shape = (AbstractShape) obj;
-                            if (shape == null || socket.isClosed()) {
-                                emitter.onError(new ConnectException("socket error"));
-                            } else {
-                                emitter.onNext(shape);
-                            }
-                        }
-                    });
-        })
+
+        // Subscribe the socket to the shapeStream (sending shapes)
+        try {
+            ObjectOutputStream objOutStream = new ObjectOutputStream(socket.getOutputStream());
+            shapeStream
                 .subscribeOn(Schedulers.io())
-                .doOnNext(s-> System.out.println("debug"))
-                .map(shape -> (AbstractShape) shape)
-                .doOnNext(shape -> System.out.println(shape.getClass().getName()));
+                    .doOnSubscribe(observable -> {
+                        System.out.println("putting observable into container");
+                        disposableHashMap.put(socket.hashCode(), observable);
+                    })
+                    .doOnNext((s) -> System.out.println("sending object"))
+                .subscribe(
+                        objOutStream::writeObject
+                        , err -> System.out.println("error sending shape to client: " +err));
 
-         */
 
+        } catch (Exception e) { e.printStackTrace(); }
+
+
+        // Subscribe to receive shapes
         Observable.<AbstractShape>create(emitter -> {
             Observable.just(socket)
                     .map(Socket::getInputStream)
@@ -73,100 +78,38 @@ public class Server {
                         while(!emitter.isDisposed()) {
                             Object shape = inStream.readObject();
                             if (shape == null || socket.isClosed()) {
-                                System.out.println("shape is null or socket disconnected");
-                                emitter.onError(new ConnectException("socket error"));
+                                System.out.println("Shape not received");
+                                emitter.onError(new Throwable("Connection error"));
                             }
                             else {
                                 emitter.onNext((AbstractShape) shape);
                             }
                         }
                     }
-                            , err -> {
-                        System.out.println("Connection error or client disconnected");
-                        System.err.println(err);
+                    , err -> {
                         if (socket.isConnected()) socket.close();
+                        emitter.onError(new Throwable("Socket disconnected"));
                     });
         })
                 .subscribeOn(Schedulers.io())
+                //.doOnError(this::disposeClient)
                 .doOnNext(shape -> System.out.println("received " + shape.getClass().getName()))
                 .subscribe(
                         shapeStream::onNext
-                , err -> {
-                            System.out.println("Error ?..");
-                            System.err.println(err.getMessage());
-                        }
-                , () -> System.out.println("?"));
+                        , err -> {
+                            System.out.println(err.getMessage());
+                            // Stop this socket from subscribing to new shapes
+                            // Using a Throwable to carry the hash code of the socket..
+                            disposeClient(new Throwable(Integer.toString(socket.hashCode())));
+                        });
 
-
-        // Subscribe the client to the shapeStream
-
-        try {
-            ObjectOutputStream objOutStream = new ObjectOutputStream(socket.getOutputStream());
-
-            shapeStream
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(objOutStream::writeObject
-                    , err -> System.out.println("error sending shape to client: " +err)
-                    , () -> System.out.println("shape sent to client"));
-
-
-        } catch (Exception e) { e.printStackTrace(); }
-
-
-
-
-        /*Observable.just(socket)
-                .subscribeOn(Schedulers.io())
-                .map(Socket::getInputStream)
-                .map(ObjectInputStream::new)
-                .flatMap(shape -> Observable.just(shape))
-                //.doOnError(e -> e.printStackTrace())
-                .subscribe(s -> {
-
-                    while (true) {
-                        Object obj = s.readObject();
-                        if (obj == null || socket.isClosed()) {
-                            System.out.println("connection lost");
-                        }
-                        System.out.println(obj.getClass().getName() + "on thread " + Thread.currentThread().getName());
-                    }
-                }
-                ,Throwable::printStackTrace);
-
-         */
-        /*
-        getIncomingShape(socket)
-                .doOnNext(s -> System.out.println("received shape: " + s.getClass().getName()))
-                .subscribe(shapeStream);
-
-         */
-        /*
-        Observable<AbstractShape> shapeSource = Observable.create(emitter -> {
-            getIncomingShape(socket)
-                    .subscribe(shape -> {
-                        while (!emitter.isDisposed()) {
-                            emitter.onNext(shape);
-                        }
-                    });
-        });
-
-        shapeSource
-                .subscribe(s -> System.out.println(s.getClass().getName()));
-
-         */
     }
 
-
-
-    private Observable<AbstractShape> getIncomingShape(Socket socket) {
-        out.println("debug0, socket: " + socket.toString());
-        return Observable.just(socket)
-                .doOnNext(t -> out.println("debug1"))
-                .map(Socket::getInputStream)
-                .map(ObjectInputStream::new)
-                .map(ObjectInputStream::readObject)
-                .filter(Objects::nonNull)       // todo check..
-                .map(aShape -> (AbstractShape) aShape);         // Cast to an AbstractShape
+    private void disposeClient(Throwable throwable) {
+        int socketHash = Integer.parseInt(throwable.getMessage());
+        System.out.println("Disposing client socket " + socketHash);
+        disposableHashMap.get(socketHash).dispose();
+        disposableHashMap.remove(socketHash);
     }
 
 
