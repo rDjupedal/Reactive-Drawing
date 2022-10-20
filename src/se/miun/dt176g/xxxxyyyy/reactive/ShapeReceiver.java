@@ -30,6 +30,7 @@ public class ShapeReceiver {
                                         emitter.onNext((AbstractShape) shape);
                                     }
                                 }
+                                System.out.println("disposed");
 
                             }
 
