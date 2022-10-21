@@ -1,7 +1,6 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 import java.util.ArrayList;
 

@@ -26,11 +26,6 @@ public class RectangleShape extends AbstractShape{
         if (x1 > x2) x1 = x2;
         if (y1 > y2) y1 = y2;
 
-        /*
-        g.setColor(getColor());
-        g.drawRect(x1, y1, width, height);
-         */
-
         Graphics2D g2 = (Graphics2D) g;
         g2.setColor(getColor());
         g2.setStroke(new BasicStroke(getThickness()));

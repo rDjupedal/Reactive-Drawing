@@ -11,13 +11,11 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.ConnectException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 public class DrawController {
     private final int TIMEOUT = 10000;  // Timeout for outgoing connections
@@ -141,7 +139,7 @@ public class DrawController {
                         .subscribe(
                                 this::connectToServer
                                 , err -> {
-                                    System.err.println(err);
+                                    System.err.println(err.getMessage());
                                     String errMsg = "Unknown error\n" + err.getMessage();
 
                                     if (err instanceof UnknownHostException) errMsg = "Malformed host!\nPlease type IP/port";
