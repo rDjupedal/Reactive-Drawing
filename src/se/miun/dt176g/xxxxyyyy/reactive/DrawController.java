@@ -15,6 +15,8 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 public class DrawController {
@@ -135,8 +137,7 @@ public class DrawController {
                         .subscribeOn(Schedulers.io())       // Use a IO thread for the whole Observable
                                                             // to prevent stuff in connectionState to
                                                             // freeze the GUI if something socket-related goes wrong..
-
-
+                        .timeout(TIMEOUT, TimeUnit.MILLISECONDS)
                         .subscribe(
                                 this::connectToServer
                                 , err -> {
@@ -147,6 +148,7 @@ public class DrawController {
                                     if (err instanceof ConnectException) errMsg = "Host down!\nPlease check IP/port";
                                     if (err instanceof IllegalArgumentException) errMsg = "Port number out of range";
                                     if (err instanceof SecurityException) errMsg = "Not allowed to open connections";
+                                    if (err instanceof TimeoutException) errMsg = "Server timeout";
 
                                     connectionState.onNext(0);  // Set connectionState to disconnected
                                     JOptionPane.showMessageDialog(dView, errMsg);
