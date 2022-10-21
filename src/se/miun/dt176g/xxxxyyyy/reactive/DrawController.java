@@ -124,17 +124,17 @@ public class DrawController {
 
         final JTextField finalAddressTextField = addressTextField;
 
-        connBtn.addActionListener(l -> {
+         connBtn.addActionListener(l -> {
             if (isConnected) connectionState.onNext(false);
             else {
-                try {
-                    String host = finalAddressTextField.getText().split("/")[0];
-                    int port = Integer.parseInt(finalAddressTextField.getText().split("/")[1]);
-                    connectToServer(host, port);
-                } catch (Exception e) {
-                    System.out.println("Malformed server/port input");
-                    e.printStackTrace();
-                }
+                Observable.just(finalAddressTextField)
+                        .map(JTextField::getText)
+                        .map(arg -> new Socket(arg.split("/|:")[0], Integer.parseInt(arg.split("/|:")[1])))
+                        .doOnNext(n -> System.out.println(n.toString()))
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                                this::connectToServer
+                                , err -> JOptionPane.showMessageDialog(dView, "Malformed host!\nPlease type IP/port"));
             }
         });
 
@@ -160,11 +160,13 @@ public class DrawController {
 
     }
 
-    private void connectToServer(String host, int port) throws IOException {
-        System.out.println("Connecting to " + host + " on port " + port + "...");
+    private void connectToServer(Socket socket) throws IOException {
+        //System.out.println("Connecting to " + host + " on port " + port + "...");
+        System.out.println("Connecting to " + socket.getInetAddress() + " on port " + socket.getPort() + "...");
 
         // The Socket and the ObjectOutStream can't be inside the Observable as these same instances are needed for sending also
-        socket = new Socket(host, port);
+        //socket = new Socket(host, port);
+        this.socket = socket;
         outputStream = new ObjectOutputStream(socket.getOutputStream());
         connectionState.onNext(true);
 
