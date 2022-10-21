@@ -205,7 +205,11 @@ public class DrawController {
                     dModel.addShape(shape);
                     dView.repaint();
                     }
-                , err -> System.out.println("Error receiving shape: " + err));
+                , err -> {
+                    System.out.println(err.getMessage());
+                    JOptionPane.showMessageDialog(dView, err.getMessage());
+                    connectionState.onNext(0);
+                    });
     }
 
 

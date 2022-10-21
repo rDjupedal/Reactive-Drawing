@@ -35,7 +35,8 @@ public class ShapeReceiver {
                             }
 
                             , err -> {
-                                System.out.println("Connection error or client disconnected: " + err);
+                                System.out.println(err.getMessage());
+                                emitter.onError(new Throwable("Disconnected"));
                                 if (socket.isConnected()) socket.close();
                             });
                 });
