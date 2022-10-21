@@ -10,10 +10,15 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.function.Function;
 
 public class DrawController {
+    private final int TIMEOUT = 10000;  // Timeout for outgoing connections
     private final DrawView dView;
     private final DrawModel dModel;
 
@@ -21,8 +26,9 @@ public class DrawController {
     private ObjectOutputStream outputStream = null;
     private Disposable inShapes;
     private Boolean isConnected = false;
-    private PublishSubject<Boolean> connectionState = PublishSubject.create();
+    private PublishSubject<Integer> connectionState = PublishSubject.create();  // 0 disconnected, 1 connecting, 2 connected
     private JButton connBtn = null;
+    JTextField addressTextField = null;
 
 
     public DrawController(DrawView dView, DrawModel dModel) {
@@ -39,12 +45,11 @@ public class DrawController {
             @Override
             public void mouseReleased(MouseEvent e) {
 
-                // A shape has been finished drawing, set it to the server
+                // A shape has been finished drawing, send it to the server
                 if (isConnected) {
-                    AbstractShape curShape = dModel.getCurrentShape();
                     Observable.just(outputStream)
-                            .subscribeOn(Schedulers.io())
-                            .subscribe(stream -> stream.writeObject(curShape),
+                            .observeOn(Schedulers.io())
+                            .subscribe(stream -> stream.writeObject(dModel.getCurrentShape()),
                                     err -> System.out.println("error: " + err));
                 }
             }
@@ -106,35 +111,46 @@ public class DrawController {
             });
         });
 
-
         //Clear the canvas
         dView.getClearBtn().addActionListener(listener -> {
             dModel.clear();
             dView.repaint();
         });
 
-
         // Get the controls from connectionPanel
-        JTextField addressTextField = null;
         Component[] components = dView.getConnectionPanel().getComponents();
         for (Component c : components) {
             if (c.getName().equals("hostText")) addressTextField = ((JTextField) c);
             if (c.getName().equals("connBtn")) connBtn = (JButton) c;
         }
 
-        final JTextField finalAddressTextField = addressTextField;
-
+        //Connect button
          connBtn.addActionListener(l -> {
-            if (isConnected) connectionState.onNext(false);
+            if (isConnected) connectionState.onNext(0);   // Disconnect
             else {
-                Observable.just(finalAddressTextField)
+                Observable.just(addressTextField)
                         .map(JTextField::getText)
+                        .doOnNext((s) -> connectionState.onNext(1)) // Set connectionState to "connecting"
                         .map(arg -> new Socket(arg.split("/|:")[0], Integer.parseInt(arg.split("/|:")[1])))
-                        .doOnNext(n -> System.out.println(n.toString()))
-                        .subscribeOn(Schedulers.io())
+                        .subscribeOn(Schedulers.io())       // Use a IO thread for the whole Observable
+                                                            // to prevent stuff in connectionState to
+                                                            // freeze the GUI if something socket-related goes wrong..
+
+
                         .subscribe(
                                 this::connectToServer
-                                , err -> JOptionPane.showMessageDialog(dView, "Malformed host!\nPlease type IP/port"));
+                                , err -> {
+                                    System.err.println(err);
+                                    String errMsg = "Unknown error\n" + err.getMessage();
+
+                                    if (err instanceof UnknownHostException) errMsg = "Malformed host!\nPlease type IP/port";
+                                    if (err instanceof ConnectException) errMsg = "Host down!\nPlease check IP/port";
+                                    if (err instanceof IllegalArgumentException) errMsg = "Port number out of range";
+                                    if (err instanceof SecurityException) errMsg = "Not allowed to open connections";
+
+                                    connectionState.onNext(0);  // Set connectionState to disconnected
+                                    JOptionPane.showMessageDialog(dView, errMsg);
+                                });
             }
         });
 
@@ -143,32 +159,40 @@ public class DrawController {
         thicknessObservable.subscribe(thickValue -> dModel.setThickness(thickValue));
         colorObservable.subscribe(color -> dModel.setColor(color));
 
-
-        connectionState.subscribe(connected -> {
-
-            if (connected) {
-                connBtn.setText("Disconnect");
-                isConnected = true;
-            } else {
-                connBtn.setText("Connect");
-                isConnected = false;
-                inShapes.dispose();
-                socket.close();
+        // Update the view and dispose Observers depending on current connection status
+        connectionState.subscribe(status -> {
+            switch (status) {
+                case 0 -> { // Disconnected
+                    connBtn.setText("Connect");
+                    connBtn.setEnabled(true);
+                    addressTextField.setEnabled(true);
+                    isConnected = false;
+                    if (inShapes != null) inShapes.dispose();
+                    if (socket != null) socket.close();
+                }
+                case 1 -> { // Connecting
+                    connBtn.setText("Connecting...");
+                    connBtn.setEnabled(false);
+                    addressTextField.setEnabled(false);
+                }
+                case 2 -> { // Connected
+                    connBtn.setText("Disconnect");
+                    connBtn.setEnabled(true);
+                    addressTextField.setEnabled(false);
+                    isConnected = true;
+                }
             }
 
         });
-
     }
 
     private void connectToServer(Socket socket) throws IOException {
-        //System.out.println("Connecting to " + host + " on port " + port + "...");
         System.out.println("Connecting to " + socket.getInetAddress() + " on port " + socket.getPort() + "...");
 
         // The Socket and the ObjectOutStream can't be inside the Observable as these same instances are needed for sending also
-        //socket = new Socket(host, port);
         this.socket = socket;
         outputStream = new ObjectOutputStream(socket.getOutputStream());
-        connectionState.onNext(true);
+        connectionState.onNext(2);  //set connectionStatus to connected
 
         // Subscribe to incoming shapes
         ShapeReceiver sReceiver = new ShapeReceiver(socket);
@@ -179,11 +203,8 @@ public class DrawController {
                     dModel.addShape(shape);
                     dView.repaint();
                     }
-                , err -> System.out.println("Error receiving shape: " + err)
-                , () -> System.out.println("Observable finished"));
-
+                , err -> System.out.println("Error receiving shape: " + err));
     }
-
 
 
     protected ArrayList<AbstractShape> getShapes() {
