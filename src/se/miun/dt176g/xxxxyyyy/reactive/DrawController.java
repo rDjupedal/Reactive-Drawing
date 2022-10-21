@@ -50,7 +50,10 @@ public class DrawController {
                     Observable.just(outputStream)
                             .observeOn(Schedulers.io())
                             .subscribe(stream -> stream.writeObject(dModel.getCurrentShape()),
-                                    err -> System.out.println("error: " + err));
+                                    err -> {
+                                System.out.println("error: " + err.getMessage());
+                                connectionState.onNext(0);
+                                    });
                 }
             }
         });
@@ -139,10 +142,11 @@ public class DrawController {
                         .subscribe(
                                 this::connectToServer
                                 , err -> {
-                                    System.err.println(err.getMessage());
+                                    System.err.println(err);
                                     String errMsg = "Unknown error\n" + err.getMessage();
 
-                                    if (err instanceof UnknownHostException) errMsg = "Malformed host!\nPlease type IP/port";
+                                    if (err instanceof UnknownHostException ||
+                                            err instanceof ArrayIndexOutOfBoundsException) errMsg = "Malformed host!\nPlease type IP/port";
                                     if (err instanceof ConnectException) errMsg = "Host down!\nPlease check IP/port";
                                     if (err instanceof IllegalArgumentException) errMsg = "Port number out of range";
                                     if (err instanceof SecurityException) errMsg = "Not allowed to open connections";
