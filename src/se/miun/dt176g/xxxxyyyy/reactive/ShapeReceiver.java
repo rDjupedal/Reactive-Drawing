@@ -5,6 +5,12 @@ import java.io.ObjectInputStream;
 import java.net.ConnectException;
 import java.net.Socket;
 
+/**
+ *
+ *
+ *
+ * @author Rasmus Djupedal
+ */
 public class ShapeReceiver {
 
     private Observable<AbstractShape> shapeObservable;

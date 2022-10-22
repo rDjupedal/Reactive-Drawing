@@ -4,21 +4,24 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.ConnectException;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * This is the Controller part of the MVC pattern
+ * It handles the communication and logic between DrawModel and DrawView as well as user input and server communication
+ *
+ * @author Rasmus Djupedal
+ */
 public class DrawController {
-    private final int TIMEOUT = 10000;  // Timeout for outgoing connections
+    private final static int TIMEOUT = 5;  // Timeout (s) for outgoing connections
     private final DrawView dView;
     private final DrawModel dModel;
 
@@ -30,12 +33,10 @@ public class DrawController {
     private JButton connBtn = null;
     JTextField addressTextField = null;
 
-
     public DrawController(DrawView dView, DrawModel dModel) {
         this.dView = dView;
         this.dModel = dModel;
 
-        //todo: make this an observable too.. or is that too much?
         dView.getDrawPanel().addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -114,7 +115,7 @@ public class DrawController {
             });
         });
 
-        //Clear the canvas
+        // Clear the canvas
         dView.getClearBtn().addActionListener(listener -> {
             dModel.clear();
             dView.repaint();
@@ -127,22 +128,26 @@ public class DrawController {
             if (c.getName().equals("connBtn")) connBtn = (JButton) c;
         }
 
-        //Connect button
+
+        // Connect button
          connBtn.addActionListener(l -> {
             if (isConnected) connectionState.onNext(0);   // Disconnect
             else {
                 Observable.just(addressTextField)
+
                         .map(JTextField::getText)
                         .doOnNext((s) -> connectionState.onNext(1)) // Set connectionState to "connecting"
-                        .map(arg -> new Socket(arg.split("/|:")[0], Integer.parseInt(arg.split("/|:")[1])))
-                        .subscribeOn(Schedulers.io())       // Use a IO thread for the whole Observable
-                                                            // to prevent stuff in connectionState to
-                                                            // freeze the GUI if something socket-related goes wrong..
-                        .timeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                        .map(hostInput -> new InetSocketAddress(hostInput.split("/|:")[0], Integer.parseInt(hostInput.split("/|:")[1])))
+                        .observeOn(Schedulers.io())     // Do all the network related stuff on a IO thread
+                        .map(socketAdr -> {
+                            Socket socket = new Socket();
+                            socket.connect(socketAdr, TIMEOUT * 1000);
+                            return socket;
+                        })
                         .subscribe(
                                 this::connectToServer
                                 , err -> {
-                                    System.err.println(err);
+                                    System.err.println("..." + err);
                                     String errMsg = "Unknown error\n" + err.getMessage();
 
                                     if (err instanceof UnknownHostException ||
@@ -150,7 +155,7 @@ public class DrawController {
                                     if (err instanceof ConnectException) errMsg = "Host down!\nPlease check IP/port";
                                     if (err instanceof IllegalArgumentException) errMsg = "Port number out of range";
                                     if (err instanceof SecurityException) errMsg = "Not allowed to open connections";
-                                    if (err instanceof TimeoutException) errMsg = "Server timeout";
+                                    if (err instanceof SocketTimeoutException) errMsg = "Server timeout";
 
                                     connectionState.onNext(0);  // Set connectionState to disconnected
                                     JOptionPane.showMessageDialog(dView, errMsg);
@@ -163,10 +168,12 @@ public class DrawController {
         thicknessObservable.subscribe(thickValue -> dModel.setThickness(thickValue));
         colorObservable.subscribe(color -> dModel.setColor(color));
 
-        // Update the view and dispose Observer depending on current connection status
+        // Updates the view and dispose Observer depending on current connection status
         connectionState.subscribe(status -> {
+
             switch (status) {
                 case 0 -> { // Disconnected
+                    System.out.println("disconnected");
                     connBtn.setText("Connect");
                     connBtn.setEnabled(true);
                     addressTextField.setEnabled(true);
@@ -175,25 +182,26 @@ public class DrawController {
                     if (socket != null) socket.close();
                 }
                 case 1 -> { // Connecting
+                    System.out.println("connecting");
                     connBtn.setText("Connecting...");
                     connBtn.setEnabled(false);
                     addressTextField.setEnabled(false);
                 }
                 case 2 -> { // Connected
+                    System.out.println("conntected");
                     connBtn.setText("Disconnect");
                     connBtn.setEnabled(true);
                     addressTextField.setEnabled(false);
                     isConnected = true;
                 }
             }
-
         });
     }
 
     private void connectToServer(Socket socket) throws IOException {
         System.out.println("Connecting to " + socket.getInetAddress() + " on port " + socket.getPort() + "...");
 
-        // The Socket and the ObjectOutStream can't be inside the Observable as these same instances are needed for sending also
+        // The Socket and the ObjectOutStream can't be inside the Observable as they are also used for sending
         this.socket = socket;
         outputStream = new ObjectOutputStream(socket.getOutputStream());
         connectionState.onNext(2);  //set connectionStatus to connected
@@ -202,11 +210,12 @@ public class DrawController {
         ShapeReceiver sReceiver = new ShapeReceiver(socket);
         inShapes = sReceiver.getObserver()
                 .subscribeOn(Schedulers.io())
-                .doOnNext(s -> System.out.println("got shape: " + s.getClass().getName() + " on thread " + Thread.currentThread().getName()))
-                .subscribe((shape) -> {
-                    dModel.addShape(shape);
-                    dView.repaint();
-                    }
+                //.doOnNext(s -> System.out.println("Received shape: " + s.getClass().getName() + " on thread " + Thread.currentThread().getName()))
+                .doOnNext(dModel::addShape)
+                .sample(1, TimeUnit.SECONDS)    // When receiving a burst of shapes from the server
+                                                        // wait a sec and then draw all of them at once instead of
+                                                        // clearing the canvas and repainting for each one.
+                .subscribe(n -> dView.repaint()
                 , err -> {
                     System.out.println(err.getMessage());
                     JOptionPane.showMessageDialog(dView, err.getMessage());
@@ -214,7 +223,10 @@ public class DrawController {
                     });
     }
 
-
+    /**
+     * DrawView uses this method to get the shapes from the DrawModel
+     * @return The shapes
+     */
     protected ArrayList<AbstractShape> getShapes() {
         return dModel.getShapes();
     }

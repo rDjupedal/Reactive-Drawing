@@ -4,6 +4,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
+/**
+ * This is the View part of the MVC pattern
+ * and acts as the container for the canvas and the buttons
+ *
+ * @author Rasmus Djupedal
+ */
 public class DrawView extends JPanel {
     private final int maxThickness = 25;
     private final MainFrame frame;
@@ -20,6 +26,7 @@ public class DrawView extends JPanel {
 
         setLayout(new BorderLayout(10,5));
 
+        // Button panel
         buttonPanel = new JPanel();
         buttonPanel.setBackground(Color.GRAY);
         setupControls(buttonPanel);
@@ -31,7 +38,7 @@ public class DrawView extends JPanel {
                 super.paintComponent(g);
                 ArrayList<AbstractShape> shapes = frame.getController().getShapes();
 
-                // Clone the ArrayList to avoid concurrent errors
+                // Clone the ArrayList to avoid concurrent-errors
                 ArrayList<AbstractShape> cl = (ArrayList) shapes.clone();
                 //shapes.forEach(shape -> shape.paint(g));
                 cl.forEach(shape -> shape.paint(g));
@@ -41,16 +48,13 @@ public class DrawView extends JPanel {
 
         add(drawPanel, BorderLayout.CENTER);
 
+        // Connection panel
         connectionPanel = new JPanel();
-
         connectionPanel.setBackground(Color.GRAY);
-
         JTextField serverTextfield = new JTextField("127.0.0.1/5000");
         serverTextfield.setName("hostText");
-
         JButton connectBtn = new JButton("Connect to server");
         connectBtn.setName("connBtn");
-
         connectionPanel.add(serverTextfield);
         connectionPanel.add(connectBtn);
         add(connectionPanel, BorderLayout.SOUTH);
