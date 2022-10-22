@@ -163,7 +163,7 @@ public class DrawController {
         thicknessObservable.subscribe(thickValue -> dModel.setThickness(thickValue));
         colorObservable.subscribe(color -> dModel.setColor(color));
 
-        // Update the view and dispose Observers depending on current connection status
+        // Update the view and dispose Observer depending on current connection status
         connectionState.subscribe(status -> {
             switch (status) {
                 case 0 -> { // Disconnected
