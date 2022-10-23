@@ -3,14 +3,18 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 import java.awt.*;
 import java.util.ArrayList;
 
+/**
+ * Tool to draw free hand shapes.
+ *
+ * @author Rasmus Djupedal
+ */
 public class FreeHandShape extends AbstractShape {
     private ArrayList<Point> points = new ArrayList<>();
 
-    public FreeHandShape(int x, int y, Color color, int thickness) {
+    public FreeHandShape(Point startPoint, Color color, int thickness) {
         setColor(color);
         setThickness(thickness);
-
-        points.add(new Point(x, y));
+        points.add(startPoint);
     }
 
     @Override
@@ -20,7 +24,6 @@ public class FreeHandShape extends AbstractShape {
 
     @Override
     public void paint(Graphics g) {
-
 
         Graphics2D g2 = (Graphics2D) g;
         g2.setColor(getColor());

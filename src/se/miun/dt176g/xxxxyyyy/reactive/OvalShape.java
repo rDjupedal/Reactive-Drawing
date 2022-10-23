@@ -2,15 +2,17 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 
 import java.awt.*;
 
+/**
+ * Tool to draw Ovals.
+ *
+ * @author Rasmus Djupedal
+ */
 public class OvalShape extends AbstractShape{
 
-    public OvalShape(int x, int y, Color color, int thickness) {
-
+    public OvalShape(Point startPoint, Color color, int thickness) {
         setColor(color);
         setThickness(thickness);
-
-        setStartX(x);
-        setStartY(y);
+        setStartPoint(startPoint);
     }
 
     @Override

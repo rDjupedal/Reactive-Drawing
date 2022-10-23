@@ -2,6 +2,11 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 
 import javax.swing.*;
 
+/**
+ * The frame containing the main GUI..
+ *
+ * @author Rasmus Djupedal
+ */
 public class MainFrame extends JFrame {
     DrawModel dModel;
     DrawView dView = new DrawView(this);
@@ -10,7 +15,7 @@ public class MainFrame extends JFrame {
     public MainFrame() {
         this.setSize(800, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setTitle("MS Paint sucks!");
+        setTitle("ShapeDrawer!");
 
         dModel = new DrawModel();
         dController = new DrawController(dView, dModel);

@@ -14,7 +14,7 @@ import static java.lang.System.out;
 
 /**
  * Wrapper to keep track of which socket incoming shapes originate from
- * 
+ *
  * @author Rasmus Djupedal
  */
 class ShapeSocketPair {
@@ -30,7 +30,7 @@ class ShapeSocketPair {
 }
 
 /**
- * Server for retrieving and broadcasting shapes
+ * Server for retrieving and sending shapes
  *
  * @author Rasmus Djupedal
  */

@@ -2,15 +2,17 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 
 import java.awt.*;
 
+/**
+ * Tool to draw a Rectangle shape
+ *
+ * @author Rasmus Djupedal
+ */
 public class RectangleShape extends AbstractShape{
 
-    public RectangleShape(int x, int y, Color color, int thickness) {
-
+    public RectangleShape(Point startPoint, Color color, int thickness) {
         setColor(color);
         setThickness(thickness);
-
-        setStartX(x);
-        setStartY(y);
+        setStartPoint(startPoint);
     }
 
     @Override

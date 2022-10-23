@@ -4,8 +4,9 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 import javax.swing.*;
 
 /**
- * Hello world!
+ * Entry point for the client part of ShapeDrawer
  *
+ * @author Rasmus Djupedal
  */
 public class App {
     public static void main( String[] args ) {

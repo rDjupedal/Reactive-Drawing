@@ -20,17 +20,16 @@ import java.util.concurrent.TimeUnit;
  * @author Rasmus Djupedal
  */
 public class DrawController {
-    private final static int TIMEOUT = 5;  // Timeout (s) for outgoing connections
+    private final static int TIMEOUT = 5;  // Connection timeout (seconds) for outgoing connections
     private final DrawView dView;
     private final DrawModel dModel;
-
     private Socket socket = null;
     private ObjectOutputStream outputStream = null;
     private Disposable inShapes;
     private Boolean isConnected = false;
     private PublishSubject<Integer> connectionState = PublishSubject.create();  // 0 disconnected, 1 connecting, 2 connected
     private JButton connBtn = null;
-    JTextField addressTextField = null;
+    private JTextField addressTextField = null;
 
     public DrawController(DrawView dView, DrawModel dModel) {
         this.dView = dView;
@@ -39,12 +38,12 @@ public class DrawController {
         dView.getDrawPanel().addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                dModel.createShape(e.getX(), e.getY());
+                // User has started drawing a new shape
+                dModel.createShape(new Point(e.getX(), e.getY()));
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-
                 // A shape has been finished drawing, send it to the server
                 if (isConnected) {
                     Observable.just(outputStream)
@@ -60,7 +59,6 @@ public class DrawController {
 
         // Observable MouseDrags
         Observable<Point> mouseObs = Observable.create(emitter -> {
-
             dView.getDrawPanel().addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseDragged(MouseEvent e) {
@@ -68,7 +66,6 @@ public class DrawController {
                     emitter.onNext(new Point(e.getX(), e.getY()));
                 }
             });
-
         });
 
         mouseObs.subscribe(point -> {
@@ -77,14 +74,15 @@ public class DrawController {
         });
 
         setupBtnObservers();
+        setupConnectionStateObserver();
     }
-
 
     /**
      * Fetch the buttons from the view and make them Observable, and subscribe to them
      */
     protected void setupBtnObservers() {
 
+        // Tools buttons
         Observable<ToolsEnum> toolObservable = Observable.create(emitter -> {
             ArrayList<JButton> buttons = dView.getShapeBtns();
             for (JButton btn : buttons) {
@@ -94,16 +92,16 @@ public class DrawController {
             }
         });
 
+        // Thickness spinner
         JSpinner tSpinner = dView.getThickSpinner();
         Observable<Integer> thicknessObservable = Observable.create(emitter -> {
-
             tSpinner.addChangeListener(listener -> {
                 emitter.onNext((Integer) tSpinner.getValue());
             });
         });
 
+        // Color selector
         Observable<Color> colorObservable = Observable.create(emitter -> {
-
             JButton colorBtn = dView.getColorBtn();
             colorBtn.addActionListener(listener -> {
                 Color color = JColorChooser.showDialog(null, "Välj färg", dModel.getColor());
@@ -114,7 +112,7 @@ public class DrawController {
             });
         });
 
-        // Clear the canvas
+        // Clear the canvas button
         dView.getClearBtn().addActionListener(listener -> {
             dModel.clear();
             dView.repaint();
@@ -127,13 +125,11 @@ public class DrawController {
             if (c.getName().equals("connBtn")) connBtn = (JButton) c;
         }
 
-
         // Connect button
          connBtn.addActionListener(l -> {
             if (isConnected) connectionState.onNext(0);   // Disconnect
             else {
                 Observable.just(addressTextField)
-
                         .map(JTextField::getText)
                         .doOnNext((s) -> connectionState.onNext(1)) // Set connectionState to "connecting"
                         .map(hostInput -> new InetSocketAddress(hostInput.split("[/:]")[0], Integer.parseInt(hostInput.split("[/:]")[1])))
@@ -149,8 +145,8 @@ public class DrawController {
                                     System.err.println(err);
                                     String errMsg = "Unknown error\n" + err.getMessage();
 
-                                    if (err instanceof UnknownHostException ||
-                                            err instanceof ArrayIndexOutOfBoundsException) errMsg = "Malformed host!\nPlease type IP/port";
+                                    if (err instanceof UnknownHostException
+                                        || err instanceof ArrayIndexOutOfBoundsException) errMsg = "Malformed host!\nPlease type IP/port";
                                     if (err instanceof ConnectException) errMsg = "Host down!\nPlease check IP/port";
                                     if (err instanceof IllegalArgumentException) errMsg = "Port number out of range";
                                     if (err instanceof SecurityException) errMsg = "Not allowed to open connections";
@@ -166,8 +162,13 @@ public class DrawController {
         toolObservable.subscribe(dModel::setTool);
         thicknessObservable.subscribe(dModel::setThickness);
         colorObservable.subscribe(dModel::setColor);
+    }
 
-        // Updates the view and dispose Observer depending on current connection status
+    /**
+     * Updates the view and disposes the Observable depending on current connection status
+     */
+    private void setupConnectionStateObserver() {
+
         connectionState.subscribe(status -> {
 
             switch (status) {
@@ -212,7 +213,8 @@ public class DrawController {
 
         // Subscribe to incoming shapes
         ShapeReceiver sReceiver = new ShapeReceiver(socket);
-        inShapes = sReceiver.getObserver()
+
+        inShapes = sReceiver.getObservable()
                 .subscribeOn(Schedulers.io())
                 //.doOnNext(s -> System.out.println("Received shape: " + s.getClass().getName() + " on thread " + Thread.currentThread().getName()))
                 .doOnNext(dModel::addShape)

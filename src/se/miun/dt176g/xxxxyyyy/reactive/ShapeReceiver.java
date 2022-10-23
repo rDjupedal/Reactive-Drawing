@@ -6,8 +6,7 @@ import java.net.ConnectException;
 import java.net.Socket;
 
 /**
- *
- *
+ * Creates an Observable for retrieving incoming shapes on a socket
  *
  * @author Rasmus Djupedal
  */
@@ -35,9 +34,7 @@ public class ShapeReceiver {
                                     }
                                 }
                                 System.out.println("disposed");
-
                             }
-
                             , err -> {
                                 System.out.println(err.getMessage());
                                 if (!emitter.isDisposed()) emitter.onError(new Throwable("Disconnected"));
@@ -49,7 +46,7 @@ public class ShapeReceiver {
     }
 
 
-    protected Observable<AbstractShape> getObserver() {
+    protected Observable<AbstractShape> getObservable() {
         return shapeObservable;
     }
 

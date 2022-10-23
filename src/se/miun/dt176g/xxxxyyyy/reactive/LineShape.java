@@ -2,14 +2,17 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 
 import java.awt.*;
 
+/**
+ * Tool to draw a Line shape.
+ *
+ * @author Rasmus Djupedal
+ */
 public class LineShape extends AbstractShape{
 
-    public LineShape(int x, int y, Color color, int thickness) {
+    public LineShape(Point startPoint, Color color, int thickness) {
         setColor(color);
         setThickness(thickness);
-
-        setStartX(x);
-        setStartY(y);
+        setStartPoint(startPoint);
     }
 
     @Override
