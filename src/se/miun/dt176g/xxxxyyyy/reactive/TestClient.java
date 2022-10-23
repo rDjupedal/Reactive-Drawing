@@ -1,8 +1,6 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-
 import java.awt.*;
 import java.io.ObjectOutputStream;
 import java.net.Socket;

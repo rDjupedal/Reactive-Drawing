@@ -13,7 +13,4 @@ public class Point implements Serializable {
     public int getX() { return this.x; }
     public int getY() { return this.y; }
 
-    public void print() {
-        System.out.println("X: " + this.x + " Y: " + this.y);
-    }
 }

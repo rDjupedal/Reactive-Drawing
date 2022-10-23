@@ -11,9 +11,9 @@ import java.util.ArrayList;
  * @author Rasmus Djupedal
  */
 public class DrawView extends JPanel {
-    private final int maxThickness = 25;
+    private final static int MAX_THICKNESS = 25;
     private final MainFrame frame;
-    private ArrayList<JButton> shapeButtons = new ArrayList<>();
+    private final ArrayList<JButton> shapeButtons = new ArrayList<>();
     private JSpinner thicknessSpinner;
     private JButton colorBtn;
     private JButton clearBtn;
@@ -38,7 +38,7 @@ public class DrawView extends JPanel {
                 super.paintComponent(g);
                 ArrayList<AbstractShape> shapes = frame.getController().getShapes();
 
-                // Clone the ArrayList to avoid concurrent-errors
+                // Clone the ArrayList to avoid concurrency-errors
                 ArrayList<AbstractShape> cl = (ArrayList) shapes.clone();
                 //shapes.forEach(shape -> shape.paint(g));
                 cl.forEach(shape -> shape.paint(g));
@@ -80,7 +80,7 @@ public class DrawView extends JPanel {
         panel.add(colorBtn);
 
         panel.add(new JLabel("Thickness "));
-        thicknessSpinner = new JSpinner(new SpinnerNumberModel(3, 1, maxThickness, 1));
+        thicknessSpinner = new JSpinner(new SpinnerNumberModel(3, 1, MAX_THICKNESS, 1));
         panel.add(thicknessSpinner);
 
         clearBtn = new JButton("Clear");

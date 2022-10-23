@@ -14,6 +14,7 @@ import static java.lang.System.out;
 
 /**
  * Wrapper to keep track of which socket incoming shapes originate from
+ * 
  * @author Rasmus Djupedal
  */
 class ShapeSocketPair {
@@ -30,6 +31,7 @@ class ShapeSocketPair {
 
 /**
  * Server for retrieving and broadcasting shapes
+ *
  * @author Rasmus Djupedal
  */
 public class Server {
@@ -65,7 +67,6 @@ public class Server {
     private void connect(Socket socket) {
         out.println("Connection accepted on thread: " + Thread.currentThread().getName());
 
-
         // Subscribe the socket to the shapeStream (send all incoming shapes to the connected client)
         try {
             ObjectOutputStream objOutStream = new ObjectOutputStream(socket.getOutputStream());
@@ -80,7 +81,6 @@ public class Server {
                     .subscribe(
                             objOutStream::writeObject
                             , err -> System.out.println("Error sending shape to client: " +err));
-
 
         } catch (Exception e) { e.printStackTrace(); }
 
@@ -112,11 +112,10 @@ public class Server {
                         shapeStream::onNext
                         , err -> {
                             System.out.println(err.getMessage());
-                            // Stop this socket from subscribing to new shapes
-                            // Using a Throwable to carry the hash code of the socket out of this lambda expression.
+                            // Dispose the Observable using a Throwable to carry the hash code
+                            // of the socket out of this lambda expression.
                             disposeClient(new Throwable(Integer.toString(socket.hashCode())));
                         });
-
     }
 
     private void disposeClient(Throwable throwable) {

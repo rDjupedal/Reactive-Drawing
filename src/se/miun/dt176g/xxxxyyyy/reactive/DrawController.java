@@ -12,7 +12,6 @@ import java.io.ObjectOutputStream;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * This is the Controller part of the MVC pattern
@@ -137,7 +136,7 @@ public class DrawController {
 
                         .map(JTextField::getText)
                         .doOnNext((s) -> connectionState.onNext(1)) // Set connectionState to "connecting"
-                        .map(hostInput -> new InetSocketAddress(hostInput.split("/|:")[0], Integer.parseInt(hostInput.split("/|:")[1])))
+                        .map(hostInput -> new InetSocketAddress(hostInput.split("[/:]")[0], Integer.parseInt(hostInput.split("[/:]")[1])))
                         .observeOn(Schedulers.io())     // Do all the network related stuff on a IO thread
                         .map(socketAdr -> {
                             Socket socket = new Socket();
@@ -147,7 +146,7 @@ public class DrawController {
                         .subscribe(
                                 this::connectToServer
                                 , err -> {
-                                    System.err.println("..." + err);
+                                    System.err.println(err);
                                     String errMsg = "Unknown error\n" + err.getMessage();
 
                                     if (err instanceof UnknownHostException ||
@@ -163,10 +162,10 @@ public class DrawController {
             }
         });
 
-
-        toolObservable.subscribe(tool -> dModel.setTool(tool));
-        thicknessObservable.subscribe(thickValue -> dModel.setThickness(thickValue));
-        colorObservable.subscribe(color -> dModel.setColor(color));
+        // Subscribe to the buttons
+        toolObservable.subscribe(dModel::setTool);
+        thicknessObservable.subscribe(dModel::setThickness);
+        colorObservable.subscribe(dModel::setColor);
 
         // Updates the view and dispose Observer depending on current connection status
         connectionState.subscribe(status -> {
@@ -198,6 +197,11 @@ public class DrawController {
         });
     }
 
+    /**
+     * Open connection to server and start subscribing to incoming shapes from the server
+     * @param socket The socket to use
+     * @throws IOException any Exception
+     */
     private void connectToServer(Socket socket) throws IOException {
         System.out.println("Connecting to " + socket.getInetAddress() + " on port " + socket.getPort() + "...");
 
@@ -212,7 +216,7 @@ public class DrawController {
                 .subscribeOn(Schedulers.io())
                 //.doOnNext(s -> System.out.println("Received shape: " + s.getClass().getName() + " on thread " + Thread.currentThread().getName()))
                 .doOnNext(dModel::addShape)
-                .sample(1, TimeUnit.SECONDS)    // When receiving a burst of shapes from the server
+                .sample(1, TimeUnit.SECONDS)     // When receiving a burst of shapes from the server
                                                         // wait a sec and then draw all of them at once instead of
                                                         // clearing the canvas and repainting for each one.
                 .subscribe(n -> dView.repaint()
