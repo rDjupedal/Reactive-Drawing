@@ -28,7 +28,8 @@ public class TestClient {
 
         ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
         Random rnd = new Random();
-        Observable.interval(2, TimeUnit.SECONDS)
+        Observable.interval(2, TimeUnit.MILLISECONDS)
+                .doOnNext(System.out::println)
                 .map( t -> new RectangleShape(
                         (new Point(rnd.nextInt(500),
                         rnd.nextInt(500))),
