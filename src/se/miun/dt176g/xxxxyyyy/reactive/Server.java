@@ -37,7 +37,8 @@ class ShapeSocketPair {
 public class Server {
 
     private static final int SERVER_PORT = 5000;
-    private ReplaySubject<ShapeSocketPair> shapeStream = ReplaySubject.create();
+    private static final int MAX_SHAPES = 1000;
+    private ReplaySubject<ShapeSocketPair> shapeStream = ReplaySubject.createWithSize(MAX_SHAPES);
     private HashMap<Integer, Disposable> disposableHashMap = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
@@ -47,7 +48,7 @@ public class Server {
 
     public void startServer() throws Exception {
         ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
-        System.out.println("ShapeServer started a port " + SERVER_PORT);
+        System.out.println("ShapeServer started a port " + SERVER_PORT + " with a maximum number of shapes set to " + MAX_SHAPES);
 
         shapeStream
                 .doOnNext(s -> out.println("Received shape " + s.getShape().getClass().getName() + " on socket " + s.getSocket().toString() + ". Thread: " + Thread.currentThread().getName()))
@@ -108,8 +109,9 @@ public class Server {
         })
                 .subscribeOn(Schedulers.io())
                 .doOnNext(shapeSocket -> System.out.println("received " + shapeSocket.getShape().getClass().getName()))
-                .subscribe(
-                        shapeStream::onNext
+                .subscribe(shapeStream.toSerialized()::onNext   // A ReplaySubject's onNext method must be called in
+                                                                // a thread safe way in order to not violate the
+                                                                // Observable contract.
                         , err -> {
                             System.out.println(err.getMessage());
                             // Dispose the Observable using a Throwable to carry the hash code
@@ -118,6 +120,10 @@ public class Server {
                         });
     }
 
+    /**
+     * Dispose the socket Observable
+     * @param throwable contains the socketHash
+     */
     private void disposeClient(Throwable throwable) {
         int socketHash = Integer.parseInt(throwable.getMessage());
         System.out.println("Disposing client socket " + socketHash);
